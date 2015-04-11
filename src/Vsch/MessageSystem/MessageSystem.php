@@ -204,4 +204,16 @@ class MessageSystem
     {
         $this->repository->removeUsersFromConversations($conversation_ids, $user_ids);
     }
+
+    public
+    function addUsersToConversations($conversation_ids, $user_ids)
+    {
+        $this->repository->addUsersToConversations($conversation_ids, $user_ids);
+    }
+
+    public
+    function modifyUsersInConversations($conversation_ids, $user_ids)
+    {
+        $this->repository->modifyUsersInConversations($conversation_ids, $user_ids);
+    }
 }
