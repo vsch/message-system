@@ -339,10 +339,10 @@ SQL
                 $keepConvs = $this->db->select("SELECT GROUP_CONCAT(DISTINCT conversation_id SEPARATOR ',') conversation_ids FROM $this->conversation_users WHERE conversation_id IN ($conversation_ids) and user_id not in ($user_ids)");
                 if (!empty($keepConvs) && ($conversationIds = $keepConvs[0]->conversation_ids) !== '' && $conversationIds !== null)
                 {
-                    $keepMessages = $this->db->select("SELECT GROUP_CONCAT(DISTINCT message_id SEPARATOR ',') message_ids FROM $this->messages_status WHERE conversation_id IN ($conversation_ids) AND user_id NOT IN ($user_ids)");
-                    if (!empty($keepMessages) && ($messageIds = $keepMessages[0]->message_ids) !== '' && $messageIds !== null)
+                    $keepMessages = $this->db->select("SELECT GROUP_CONCAT(DISTINCT id SEPARATOR ',') message_status_ids FROM $this->messages_status WHERE conversation_id IN ($conversation_ids) AND user_id NOT IN ($user_ids)");
+                    if (!empty($keepMessages) && ($messageStatusIds = $keepMessages[0]->message_status_ids) !== '' && $messageStatusIds !== null)
                     {
-                        $this->db->delete("DELETE FROM $this->messages_status WHERE message_id NOT IN ($messageIds)");
+                        $this->db->delete("DELETE FROM $this->messages_status WHERE id NOT IN ($messageStatusIds)");
                         //$this->db->delete("DELETE FROM $this->messages WHERE message_id NOT IN ($messageIds)");
                         $this->db->delete("DELETE FROM $this->conversation_users WHERE conversation_id IN ($conversation_ids) AND user_id IN ($user_ids)");
                     }
@@ -369,6 +369,120 @@ WHERE cnvs.id in ($conversation_ids)
 
 SQL
                 );
+
+                $this->db->commit();
+            }
+            catch (Exception $e)
+            {
+                $this->db->rollBack();
+                throw $e;
+            }
+        }
+    }
+
+    public
+    function addUsersToConversations($conversation_ids, $user_ids)
+    {
+        if (is_array($conversation_ids)) $conversation_ids = implode(',', $conversation_ids);
+        if (is_array($user_ids)) $user_ids = implode(',', $user_ids);
+
+        // make sure we have no extra conversation ids where the user is no longer participating
+        if (!empty($conversation_ids) && !empty($user_ids))
+        {
+            $this->db->beginTransaction();
+            try
+            {
+                // add conversation_users where they don't exist
+                $this->db->update(<<<SQL
+INSERT INTO $this->conversation_users (conversation_id, user_id)
+SELECT * FROM
+(
+    select cnvs.id conversation_id, usrs.$this->usersTableKey user_id from $this->conversations cnvs cross join $this->usersTable usrs
+    where cnvs.id in ($conversation_ids) and usrs.$this->usersTableKey in ($user_ids)
+) cu
+WHERE NOT exists(select * from $this->conversation_users cu2 where cu2.conversation_id = cu.conversation_id and cu2.user_id = cu.user_id)
+
+SQL
+                );
+
+                // then add messages_status for these users and mark as unread
+                $this->db->update(<<<SQL
+INSERT INTO $this->messages_status (conversation_id, user_id, message_id, self, status)
+SELECT * FROM
+(
+    select cnvs.id conversation_id, usrs.$this->usersTableKey user_id, msgs.id message_id, 0 self, 0 status
+    from ($this->conversations cnvs
+        inner join $this->messages msgs on cnvs.id = msgs.conversation_id)
+        cross join $this->usersTable usrs
+    where cnvs.id in ($conversation_ids) and usrs.$this->usersTableKey in ($user_ids)
+) ms
+WHERE NOT exists(select * from $this->messages_status ms2
+                    where ms2.conversation_id = ms.conversation_id
+                        and ms2.user_id = ms.user_id
+                        and ms2.message_id = ms.message_id)
+
+SQL
+                );
+
+                $this->db->update(<<<SQL
+UPDATE $this->conversations cnvs SET user_ids = (SELECT GROUP_CONCAT(user_id ORDER BY user_id SEPARATOR ',') FROM $this->conversation_users cu WHERE cu.conversation_id = cnvs.id)
+WHERE cnvs.id in ($conversation_ids)
+
+SQL
+                );
+
+                $this->db->commit();
+            }
+            catch (Exception $e)
+            {
+                $this->db->rollBack();
+                throw $e;
+            }
+        }
+    }
+
+    public
+    function getCleanConversationIds($conversation_ids)
+    {
+        $row = $this->db->select("SELECT GROUP_CONCAT(DISTINCT id SEPARATOR ',') conversation_ids FROM $this->conversations WHERE id IN ($conversation_ids)");
+        return empty($row) ? '' : $row[0]->conversation_ids;
+    }
+
+    public
+    function getCleanUserIds($user_ids)
+    {
+        $row = $this->db->select("SELECT GROUP_CONCAT(DISTINCT $this->usersTableKey ORDER BY $this->usersTableKey SEPARATOR ',') user_ids FROM $this->usersTable WHERE $this->usersTableKey IN ($user_ids)");
+        return empty($row) ? '' : $row[0]->user_ids;
+    }
+
+    public
+    function modifyUsersInConversations($conversation_ids, $user_ids)
+    {
+        if (is_array($conversation_ids)) $conversation_ids = implode(',', $conversation_ids);
+        if (is_array($user_ids)) $user_ids = implode(',', $user_ids);
+
+        // make sure we have no extra conversation ids where the user is no longer participating
+        if (!empty($conversation_ids) && !empty($user_ids))
+        {
+            $conversations = $this->db->select(<<<SQL
+SELECT GROUP_CONCAT(DISTINCT user_id ORDER BY user_id SEPARATOR ',') user_ids, conversation_id id FROM $this->conversation_users WHERE conversation_id IN ($conversation_ids) GROUP BY conversation_id
+SQL
+            );
+
+            $this->db->beginTransaction();
+            try
+            {
+                $user_ids = explode(',', $user_ids);
+
+                foreach ($conversations as $conversation)
+                {
+                    $conversation_users = explode(',', $conversation->user_ids);
+                    $addUsers = implode(',',array_diff($user_ids, $conversation_users));
+                    $removeUsers = implode(',',array_diff($conversation_users, $user_ids));
+
+                    if (!empty($addUsers)) $this->addUsersToConversations($conversation->id, $addUsers);
+                    if (!empty($removeUsers)) $this->removeUsersFromConversations($conversation->id, $removeUsers);
+                }
 
                 $this->db->commit();
             }
