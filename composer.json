@@ -1,0 +1,40 @@
+{
+    "name": "vsch/message-system",
+    "type": "library",
+    "description": "user messaging system",
+    "keywords": ["laravel", "php", "messaging", "message-system"],
+    "homepage": "https://github.com/vsch/message-system",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "tzookb",
+            "email": "tzookb@gmail.com",
+            "role": "Developer"
+        },
+        {
+            "name": "vsch",
+            "email": "vladimir.schneider@gmail.com",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": ">=5.4.0",
+        "illuminate/events": "4.2.*",
+        "illuminate/database": "4.2.*"
+    },
+    "require-dev": {
+        "mockery/mockery": "dev-master",
+        "phpunit/phpunit": "4.3.*",
+        "illuminate/filesystem": "4.*",
+        "league/factory-muffin": "~2.0"
+    },
+    "autoload": {
+        "psr-0": {
+            "Vsch\\MessageSystem": "src/"
+        },
+        "classmap": [
+            "src/migrations"
+        ]
+    },    
+    "minimum-stability": "dev"    
+}
