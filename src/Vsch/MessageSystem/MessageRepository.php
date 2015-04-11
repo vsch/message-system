@@ -293,13 +293,13 @@ SQL
         if ($exclude_status === null) $exclude_status = self::DELETED . ',' . self::ARCHIVED . ',' . self::READ;
 
         return $this->db->select(<<<SQL
-SELECT cnvs.id conversation_id, cnvs.title as conversation_title, cnvs.user_ids conversation_user_ids, null created_at, null message_id, null content, null status, null self, null sender_id, null sender_disp,
+SELECT cnvs.id conversation_id, cnvs.title as conversation_title, cnvs.user_ids conversation_user_ids, null created_at, null id, null content, null status, null self, null sender_id, null sender_disp,
 (SELECT GROUP_CONCAT($this->usersTableDisplay SEPARATOR '|') user_names FROM $this->usersTable
     WHERE $this->usersTableKey IN (SELECT user_id FROM $this->conversation_users cu WHERE cu.conversation_id = cnvs.id)) conversation_participants
 FROM $this->conversations cnvs
 WHERE EXISTS (SELECT * FROM $this->conversation_users cu WHERE cu.conversation_id = cnvs.id AND cu.user_id = $user_id)
 UNION ALL
-SELECT msg.conversation_id, cnvs.title as conversation_title, cnvs.user_ids conversation_user_ids, msg.created_at, msg.id message_id, msg.content, mst.status, mst.self, msg.sender_id, us.$this->usersTableDisplay sender_disp, null conversation_participants
+SELECT msg.conversation_id, cnvs.title as conversation_title, cnvs.user_ids conversation_user_ids, msg.created_at, msg.id id, msg.content, mst.status, mst.self, msg.sender_id, us.$this->usersTableDisplay sender_disp, null conversation_participants
 FROM $this->messages msg
     INNER JOIN $this->conversations cnvs ON msg.conversation_id = cnvs.id
     INNER JOIN $this->messages_status mst ON msg.id = mst.message_id
