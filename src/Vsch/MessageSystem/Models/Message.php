@@ -11,5 +11,12 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Message extends Model
 {
+    protected $table = 'messages';
 
+    public
+    function __construct($attributes = [])
+    {
+        $this->table = \Config::get('message-system::config.tablePrefix', '') . 'messages';
+        parent::__construct($attributes);
+    }
 }

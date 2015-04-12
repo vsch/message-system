@@ -11,5 +11,15 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Conversation extends Model
 {
+    protected $table = 'conversations';
 
+    /**
+     * Conversation constructor.
+     */
+    public
+    function __construct(array $attributes = array())
+    {
+        $this->table = \Config::get('message-system::config.tablePrefix', '') . 'conversations';
+        parent::__construct($attributes);
+    }
 }

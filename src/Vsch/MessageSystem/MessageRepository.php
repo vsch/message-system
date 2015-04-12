@@ -262,7 +262,7 @@ SQL
 
         $this->db->statement(<<<SQL
 UPDATE $this->messages_status SET status = $status
-WHERE user_id = $user_id $currWhere AND message_id IN (SELECT id FROM messages WHERE conversation_id= $conversation_id)
+WHERE user_id = $user_id $currWhere AND message_id IN (SELECT id FROM $this->messages WHERE conversation_id= $conversation_id)
 
 SQL
         );
