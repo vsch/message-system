@@ -2,6 +2,7 @@
 namespace Vsch\MessageSystem\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Vsch\MessageSystem\Facade\Msg;
 
 /**
  * Created by PhpStorm.
@@ -21,5 +22,21 @@ class Conversation extends Model
     {
         $this->table = \Config::get('message-system::config.tablePrefix', '') . 'conversations';
         parent::__construct($attributes);
+    }
+
+    public static
+    function boot()
+    {
+        parent::boot();
+
+        /* @var $model Conversation */
+        self::saved(function ($model)
+        {
+            if ($model->isDirty('user_ids'))
+            {
+                // update user id list in database
+                Msg::modifyUsersInConversations($model->id, $model->user_ids);
+            }
+        });
     }
 }
