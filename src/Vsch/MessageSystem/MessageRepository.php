@@ -275,7 +275,7 @@ SQL
         if ($exclude_status === null) $exclude_status = self::DELETED . ',' . self::ARCHIVED . ',' . self::READ;
 
         $result = $this->db->select(<<<SQL
-SELECT msg.id, msg.content, mst.status, msg.created_at, msg.sender_id
+SELECT msg.id, msg.content, mst.status, msg.created_at, msg.updated_at, msg.sender_id
 FROM $this->messages_status mst
     INNER JOIN $this->messages msg ON mst.message_id=msg.id
 WHERE msg.conversation_id = $conversation_id AND mst.user_id = $user_id AND mst.status NOT IN ($exclude_status)
@@ -293,13 +293,13 @@ SQL
         if ($exclude_status === null) $exclude_status = self::DELETED . ',' . self::ARCHIVED . ',' . self::READ;
 
         return $this->db->select(<<<SQL
-SELECT cnvs.id conversation_id, cnvs.title as conversation_title, cnvs.user_ids conversation_user_ids, null created_at, null id, null content, null status, null self, null sender_id, null sender,
+SELECT cnvs.id conversation_id, cnvs.title as conversation_title, cnvs.user_ids conversation_user_ids, null created_at, null updated_at, null id, null content, null status, null self, null sender_id, null sender,
 (SELECT GROUP_CONCAT($this->usersTableDisplay SEPARATOR '|') user_names FROM $this->usersTable
     WHERE $this->usersTableKey IN (SELECT user_id FROM $this->conversation_users cu WHERE cu.conversation_id = cnvs.id)) conversation_participants
 FROM $this->conversations cnvs
 WHERE EXISTS (SELECT * FROM $this->conversation_users cu WHERE cu.conversation_id = cnvs.id AND cu.user_id = $user_id)
 UNION ALL
-SELECT msg.conversation_id, cnvs.title as conversation_title, cnvs.user_ids conversation_user_ids, msg.created_at, msg.id id, msg.content, mst.status, mst.self, msg.sender_id, us.$this->usersTableDisplay sender, null conversation_participants
+SELECT msg.conversation_id, cnvs.title as conversation_title, cnvs.user_ids conversation_user_ids, msg.created_at, msg.updated_at, msg.id id, msg.content, mst.status, mst.self, msg.sender_id, us.$this->usersTableDisplay sender, null conversation_participants
 FROM $this->messages msg
     INNER JOIN $this->conversations cnvs ON msg.conversation_id = cnvs.id
     INNER JOIN $this->messages_status mst ON msg.id = mst.message_id
