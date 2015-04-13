@@ -181,38 +181,50 @@ SQL
     }
 
     public
-    function markMessageAs($msgId, $userId, $status)
+    function markMessageAs($msg_id, $user_id, $status)
     {
+        $andWhere = " AND user_id = $user_id";
+
+        if ($status === MessageRepository::DELETED)
+        {
+            // if sender deletes the message then delete for all
+            $rows = $this->db->select("SELECT * FROM $this->messages WHERE sender_id = $user_id and id = $msg_id");
+            if (!empty($rows))
+            {
+                $andWhere = '';
+            }
+        }
+
         $this->db->statement(<<<SQL
 UPDATE $this->messages_status
 SET status = $status
-WHERE user_id = $userId AND message_id = $msgId
+WHERE message_id = $msg_id$andWhere
 SQL
         );
     }
 
     public
-    function markMessageAsRead($msgId, $userId)
+    function markMessageAsRead($msg_id, $user_id)
     {
-        $this->markMessageAs($msgId, $userId, self::READ);
+        $this->markMessageAs($msg_id, $user_id, self::READ);
     }
 
     public
-    function markMessageAsUnread($msgId, $userId)
+    function markMessageAsUnread($msg_id, $user_id)
     {
-        $this->markMessageAs($msgId, $userId, self::UNREAD);
+        $this->markMessageAs($msg_id, $user_id, self::UNREAD);
     }
 
     public
-    function markMessageAsDeleted($msgId, $userId)
+    function markMessageAsDeleted($msg_id, $user_id)
     {
-        $this->markMessageAs($msgId, $userId, self::DELETED);
+        $this->markMessageAs($msg_id, $user_id, self::DELETED);
     }
 
     public
-    function markMessageAsArchived($msgId, $userId)
+    function markMessageAsArchived($msg_id, $user_id)
     {
-        $this->markMessageAs($msgId, $userId, self::ARCHIVED);
+        $this->markMessageAs($msg_id, $user_id, self::ARCHIVED);
     }
 
     public
@@ -262,7 +274,7 @@ SQL
 
         $this->db->statement(<<<SQL
 UPDATE $this->messages_status SET status = $status
-WHERE user_id = $user_id $currWhere AND message_id IN (SELECT id FROM $this->messages WHERE conversation_id= $conversation_id)
+WHERE user_id = $user_id $currWhere AND message_id IN (SELECT id FROM $this->messages WHERE conversation_id = $conversation_id)
 
 SQL
         );
@@ -477,8 +489,8 @@ SQL
                 foreach ($conversations as $conversation)
                 {
                     $conversation_users = explode(',', $conversation->user_ids);
-                    $addUsers = implode(',',array_diff($user_ids, $conversation_users));
-                    $removeUsers = implode(',',array_diff($conversation_users, $user_ids));
+                    $addUsers = implode(',', array_diff($user_ids, $conversation_users));
+                    $removeUsers = implode(',', array_diff($conversation_users, $user_ids));
 
                     if (!empty($addUsers)) $this->addUsersToConversations($conversation->id, $addUsers);
                     if (!empty($removeUsers)) $this->removeUsersFromConversations($conversation->id, $removeUsers);
