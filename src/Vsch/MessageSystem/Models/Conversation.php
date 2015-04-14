@@ -20,7 +20,7 @@ class Conversation extends Model
     public
     function __construct(array $attributes = array())
     {
-        $this->table = \Config::get('message-system::config.tablePrefix', '') . 'conversations';
+        $this->table = \Config::get('message-system::config.table_prefix', '') . 'conversations';
         parent::__construct($attributes);
     }
 

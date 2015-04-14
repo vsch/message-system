@@ -16,7 +16,7 @@ class Message extends Model
     public
     function __construct($attributes = [])
     {
-        $this->table = \Config::get('message-system::config.tablePrefix', '') . 'messages';
+        $this->table = \Config::get('message-system::config.table_prefix', '') . 'messages';
         parent::__construct($attributes);
     }
 }

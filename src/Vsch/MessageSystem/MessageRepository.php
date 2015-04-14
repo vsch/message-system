@@ -19,10 +19,10 @@ class MessageRepository
     const ARCHIVED = 2;
     const DELETED = 3;
 
-    protected $usersTable;
-    protected $usersTableKey;
-    protected $tablePrefix;
-    protected $usersTableDisplay;
+    protected $users_table;
+    protected $users_table_key;
+    protected $table_prefix;
+    protected $users_table_display;
     /**
      * @var DatabaseManager
      */
@@ -34,33 +34,29 @@ class MessageRepository
     protected $messages_status;
     protected $conversations;
 
-    protected static
-    function getConfig($config, $key, $default = null)
+    protected
+    function getConfig($key, $default = null)
     {
-        return array_key_exists($key, $config) ? $config[$key] : $default;
+        return array_key_exists($key, $this->config) ? $this->config[$key] : $default;
     }
 
     public
     function __construct($config, DatabaseManager $db)
     {
         $this->config = $config;
-
-        $usersTable = self::getConfig($config, 'usersTable', 'users');
-        $usersTableKey = self::getConfig($config, 'usersTableKey', 'id');
-        $usersTableDisplay = self::getConfig($config, 'usersTableDisplay', 'id');
-        $tablePrefix = self::getConfig($config, 'tablePrefix', '');
-
-        $this->usersTable = $usersTable;
-        $this->usersTableKey = $usersTableKey;
-        $this->usersTableDisplay = $usersTableDisplay;
-        $this->tablePrefix = $tablePrefix;
         $this->db = $db;
 
-        $this->conversation_users = $this->tablePrefix . 'conversation_users';
-        $this->messages = $this->tablePrefix . 'messages';
-        $this->messages_status = $this->tablePrefix . 'messages_status';
-        $this->conversations = $this->tablePrefix . 'conversations';
-        $this->usersTableDisplay = $usersTableDisplay;
+        $table_prefix = $this->getConfig('table_prefix', '');
+        $this->table_prefix = $table_prefix;
+
+        $this->users_table = $this->getConfig('users_table', 'users');
+        $this->users_table_key = $this->getConfig('users_table_key', 'id');
+        $this->users_table_display = $this->getConfig('users_table_display', 'id');
+
+        foreach (['conversation_users', 'messages', 'messages_status', 'conversations',] as $table)
+        {
+            $this->$table = $table_prefix . $table;
+        }
     }
 
     public
@@ -83,7 +79,7 @@ class MessageRepository
             {
                 $count = $this->db->insert(<<<SQL
 INSERT INTO $this->conversation_users (conversation_id, user_id)
-SELECT ?, $this->usersTableKey FROM $this->usersTable WHERE $this->usersTableKey IN ($user_ids)
+SELECT ?, $this->users_table_key FROM $this->users_table WHERE $this->users_table_key IN ($user_ids)
 
 SQL
                     , [$conv->id]);
@@ -185,7 +181,7 @@ SQL
     {
         $andWhere = " AND user_id = $user_id";
 
-        if ($status === MessageRepository::DELETED)
+        if ($status === GeoipRepository::DELETED)
         {
             // if sender deletes the message then delete for all
             $rows = $this->db->select("SELECT * FROM $this->messages WHERE sender_id = $user_id and id = $msg_id");
@@ -306,16 +302,16 @@ SQL
 
         return $this->db->select(<<<SQL
 SELECT cnvs.id conversation_id, cnvs.title as conversation_title, cnvs.user_ids conversation_user_ids, null created_at, null updated_at, null id, null content, null status, null self, null sender_id, null sender,
-(SELECT GROUP_CONCAT($this->usersTableDisplay SEPARATOR '|') user_names FROM $this->usersTable
-    WHERE $this->usersTableKey IN (SELECT user_id FROM $this->conversation_users cu WHERE cu.conversation_id = cnvs.id)) conversation_participants
+(SELECT GROUP_CONCAT($this->users_table_display SEPARATOR '|') user_names FROM $this->users_table
+    WHERE $this->users_table_key IN (SELECT user_id FROM $this->conversation_users cu WHERE cu.conversation_id = cnvs.id)) conversation_participants
 FROM $this->conversations cnvs
 WHERE EXISTS (SELECT * FROM $this->conversation_users cu WHERE cu.conversation_id = cnvs.id AND cu.user_id = $user_id)
 UNION ALL
-SELECT msg.conversation_id, cnvs.title as conversation_title, cnvs.user_ids conversation_user_ids, msg.created_at, msg.updated_at, msg.id id, msg.content, mst.status, mst.self, msg.sender_id, us.$this->usersTableDisplay sender, null conversation_participants
+SELECT msg.conversation_id, cnvs.title as conversation_title, cnvs.user_ids conversation_user_ids, msg.created_at, msg.updated_at, msg.id id, msg.content, mst.status, mst.self, msg.sender_id, us.$this->users_table_display sender, null conversation_participants
 FROM $this->messages msg
     INNER JOIN $this->conversations cnvs ON msg.conversation_id = cnvs.id
     INNER JOIN $this->messages_status mst ON msg.id = mst.message_id
-    INNER JOIN $this->usersTable us ON msg.sender_id = us.$this->usersTableKey
+    INNER JOIN $this->users_table us ON msg.sender_id = us.$this->users_table_key
 WHERE mst.user_id = $user_id AND mst.status NOT IN ($exclude_status)
 ORDER BY conversation_id, created_at ASC
 
@@ -409,8 +405,8 @@ SQL
 INSERT INTO $this->conversation_users (conversation_id, user_id)
 SELECT * FROM
 (
-    select cnvs.id conversation_id, usrs.$this->usersTableKey user_id from $this->conversations cnvs cross join $this->usersTable usrs
-    where cnvs.id in ($conversation_ids) and usrs.$this->usersTableKey in ($user_ids)
+    select cnvs.id conversation_id, usrs.$this->users_table_key user_id from $this->conversations cnvs cross join $this->users_table usrs
+    where cnvs.id in ($conversation_ids) and usrs.$this->users_table_key in ($user_ids)
 ) cu
 WHERE NOT exists(select * from $this->conversation_users cu2 where cu2.conversation_id = cu.conversation_id and cu2.user_id = cu.user_id)
 
@@ -422,11 +418,11 @@ SQL
 INSERT INTO $this->messages_status (conversation_id, user_id, message_id, self, status)
 SELECT * FROM
 (
-    select cnvs.id conversation_id, usrs.$this->usersTableKey user_id, msgs.id message_id, 0 self, 0 status
+    select cnvs.id conversation_id, usrs.$this->users_table_key user_id, msgs.id message_id, 0 self, 0 status
     from ($this->conversations cnvs
         inner join $this->messages msgs on cnvs.id = msgs.conversation_id)
-        cross join $this->usersTable usrs
-    where cnvs.id in ($conversation_ids) and usrs.$this->usersTableKey in ($user_ids)
+        cross join $this->users_table usrs
+    where cnvs.id in ($conversation_ids) and usrs.$this->users_table_key in ($user_ids)
 ) ms
 WHERE NOT exists(select * from $this->messages_status ms2
                     where ms2.conversation_id = ms.conversation_id
@@ -463,7 +459,7 @@ SQL
     public
     function getCleanUserIds($user_ids)
     {
-        $row = $this->db->select("SELECT GROUP_CONCAT(DISTINCT $this->usersTableKey ORDER BY $this->usersTableKey SEPARATOR ',') user_ids FROM $this->usersTable WHERE $this->usersTableKey IN ($user_ids)");
+        $row = $this->db->select("SELECT GROUP_CONCAT(DISTINCT $this->users_table_key ORDER BY $this->users_table_key SEPARATOR ',') user_ids FROM $this->users_table WHERE $this->users_table_key IN ($user_ids)");
         return empty($row) ? '' : $row[0]->user_ids;
     }
 

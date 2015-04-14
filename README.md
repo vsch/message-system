@@ -33,11 +33,12 @@ The changes include:
 - changed status constants so that UNREAD is 0, READ is 1, ARCHIVED is 2 and DELETED is 3. Which seems like a logical progression of a message's status throughout its lifetime. 
 - rewrote all queries in terms of DB access without Eloquent overhead of models.
 - de-normalized the DB model for quicker access with less joins. Now the conversation has a comma separated list of user ids of participants.
-- added initialization of $table field in all models to the actual table name as defined by config.php 'tablePrefix' setting. Now models work correctly regardless of prefix.
+- added initialization of $table field in all models to the actual table name as defined by config.php 'table_prefix' setting. Now models work correctly regardless of prefix.
 - added updating of the conversation participants from the Conversation Model's user_ids field. Changing the comma separated list in the Conversation Model and saving, changes the messages_status and conversation_users tables.
 - added handling of READ and WRITE db connections where objects are created and then immediately queried. In that case the latter queries are run on the WRITE connection so as to avoid replication delay related errors.
+- changed config values to use snake_case convention to match the rest of Laravel config files
 - moved all MessageRepository configuration access into MessageRepository from MessageServiceProvider, now MessageRepository constructor takes an array of config values. 
-- added Config value for 'usersTableDisplay' value which gives the name of the field in the users table to use for identifying the user for display purposes. Default is 'id' but should be whatever field you have for the users, like name or user_name, etc. This field is added to retrieved messages as `sender` and for `|` separated list of participants in the conversation's `participants` field.
+- added Config value for 'users_table_display' value which gives the name of the field in the users table to use for identifying the user for display purposes. Default is 'id' but should be whatever field you have for the users, like name or user_name, etc. This field is added to retrieved messages as `sender` and for `|` separated list of participants in the conversation's `participants` field.
 
 **TODO**:
 - add RESTful controller for message access and manipulation via ajax, with PHP, javascript and HTML code snippets that could be easily integrated into any project.

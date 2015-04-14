@@ -13,9 +13,9 @@ class CreateMessageSchema extends Migration
     public
     function up()
     {
-        $prefix = Config::get('message-system::config.tablePrefix', '');
-        $users = Config::get('message-system::config.usersTable', 'users');
-        $user_id = Config::get('message-system::config.usersTableKey', 'id');
+        $prefix = Config::get('message-system::config.table_prefix', '');
+        $users = Config::get('message-system::config.users_table', 'users');
+        $user_id = Config::get('message-system::config.users_table_key', 'id');
 
         Schema::create($prefix.'conversations', function ($table)
         {
@@ -76,7 +76,7 @@ class CreateMessageSchema extends Migration
     public
     function down()
     {
-        $prefix = Config::get('message-system::config.tablePrefix', '');
+        $prefix = Config::get('message-system::config.table_prefix', '');
 
         Schema::drop($prefix.'messages_status');
         Schema::drop($prefix.'conversation_users');

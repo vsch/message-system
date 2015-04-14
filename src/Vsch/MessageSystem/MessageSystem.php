@@ -7,10 +7,6 @@ use Vsch\MessageSystem\Models\Conversation;
 
 class MessageSystem
 {
-    protected $usersTable;
-    protected $usersTableKey;
-    protected $tablePrefix;
-
     /**
      * @var MessageRepository
      */

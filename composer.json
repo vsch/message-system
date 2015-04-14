@@ -13,7 +13,7 @@
         },
         {
             "name": "vsch",
-            "email": "vladimir.schneider@gmail.com",
+            "email": "vladimir@vladsch.com",
             "role": "Developer"
         }
     ],
@@ -23,7 +23,7 @@
         "illuminate/database": "4.2.*"
     },
     "require-dev": {
-        "mockery/mockery": "dev-master",
+        "mockery/mockery": "0.8.*",
         "phpunit/phpunit": "4.3.*",
         "illuminate/filesystem": "4.*",
         "league/factory-muffin": "~2.0"
@@ -35,6 +35,6 @@
         "classmap": [
             "src/migrations"
         ]
-    },    
-    "minimum-stability": "dev"    
+    },
+    "minimum-stability": "dev"
 }
