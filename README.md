@@ -78,7 +78,7 @@ Installation:
 5. publish the package config `php artisan config:publish vsch/message-system` to add packages/vsch/message-system/config.php to your project
 6. There is only one migration file and it contains migration for the necessary schema for the message-system: `2015_04_09_170130_create_message_schema.php`
 7. You don't need to publish the package migration just to add a prefix. The migration uses the configuration prefix for table names. To copy the migration file to your project run: `php artisan migrate:publish vsch/message-system`
-8. After editing the config file to adjust the default prefix of 'vms_' you need to run `php artisan migrate` to create the message system schema objects.
+8. After editing the config file to adjust the default prefix of 'vms_' you need to run `php artisan migrate --package=vsch/message-system` to create the message system schema objects. If you ran the migrate:publish command then you will need to run the usual `php artisan migrate` command instead.
 
 How to use it:
 ----------------

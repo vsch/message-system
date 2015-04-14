@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 
 class CreateMessageSchema extends Migration
 {
@@ -13,11 +14,11 @@ class CreateMessageSchema extends Migration
     public
     function up()
     {
-        $prefix = Config::get('message-system::config.table_prefix', '');
-        $users = Config::get('message-system::config.users_table', 'users');
-        $user_id = Config::get('message-system::config.users_table_key', 'id');
+        $prefix = \Config::get('message-system::config.table_prefix', '');
+        $users = \Config::get('message-system::config.users_table', 'users');
+        $user_id = \Config::get('message-system::config.users_table_key', 'id');
 
-        Schema::create($prefix.'conversations', function ($table)
+        Schema::create($prefix.'conversations', function (Blueprint $table)
         {
             $table->increments('id');
             $table->string('title', 128)->nullable()->default(null);
@@ -26,7 +27,7 @@ class CreateMessageSchema extends Migration
             $table->timestamps();
         });
 
-        Schema::create($prefix.'messages', function($table) use ($prefix, $user_id, $users)
+        Schema::create($prefix.'messages', function(Blueprint $table) use ($prefix, $user_id, $users)
         {
             $table->increments('id');
             $table->integer('sender_id')->unsigned();
@@ -42,7 +43,7 @@ class CreateMessageSchema extends Migration
 
         });
 
-        Schema::create($prefix.'conversation_users', function($table) use ($prefix, $user_id, $users)
+        Schema::create($prefix.'conversation_users', function(Blueprint $table) use ($prefix, $user_id, $users)
         {
             $table->integer('conversation_id')->unsigned()->nullable();
             $table->integer('user_id')->unsigned()->nullable();
@@ -53,7 +54,7 @@ class CreateMessageSchema extends Migration
             $table->foreign('user_id')->references($user_id)->on($users)->onDelete('cascade');
         });
 
-        Schema::create($prefix.'messages_status', function($table) use ($prefix, $user_id, $users)
+        Schema::create($prefix.'messages_status', function(Blueprint $table) use ($prefix, $user_id, $users)
         {
             $table->increments('id');
             $table->integer('user_id')->unsigned();
@@ -76,7 +77,7 @@ class CreateMessageSchema extends Migration
     public
     function down()
     {
-        $prefix = Config::get('message-system::config.table_prefix', '');
+        $prefix = \Config::get('message-system::config.table_prefix', '');
 
         Schema::drop($prefix.'messages_status');
         Schema::drop($prefix.'conversation_users');
