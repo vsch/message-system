@@ -181,7 +181,7 @@ SQL
     {
         $andWhere = " AND user_id = $user_id";
 
-        if ($status === GeoipRepository::DELETED)
+        if ($status === self::DELETED)
         {
             // if sender deletes the message then delete for all
             $rows = $this->db->select("SELECT * FROM $this->messages WHERE sender_id = $user_id and id = $msg_id");
