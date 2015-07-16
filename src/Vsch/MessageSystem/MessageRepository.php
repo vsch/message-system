@@ -23,6 +23,7 @@ class MessageRepository
     protected $users_table_key;
     protected $table_prefix;
     protected $users_table_display;
+    protected $users_table_flags;
     /**
      * @var DatabaseManager
      */
@@ -52,6 +53,7 @@ class MessageRepository
         $this->users_table = $this->getConfig('users_table', 'users');
         $this->users_table_key = $this->getConfig('users_table_key', 'id');
         $this->users_table_display = $this->getConfig('users_table_display', 'id');
+        $this->users_table_flags = $this->getConfig('users_table_flags', 'null');
 
         foreach (['conversation_users', 'messages', 'messages_status', 'conversations',] as $table)
         {
@@ -303,11 +305,13 @@ SQL
         return $this->db->select(<<<SQL
 SELECT cnvs.id conversation_id, cnvs.title as conversation_title, cnvs.user_ids conversation_user_ids, null created_at, null updated_at, null id, null content, null status, null self, null sender_id, null sender,
 (SELECT GROUP_CONCAT($this->users_table_display SEPARATOR '|') user_names FROM $this->users_table
-    WHERE $this->users_table_key IN (SELECT user_id FROM $this->conversation_users cu WHERE cu.conversation_id = cnvs.id)) conversation_participants
+    WHERE $this->users_table_key IN (SELECT user_id FROM $this->conversation_users cu WHERE cu.conversation_id = cnvs.id)) conversation_participants,
+(SELECT GROUP_CONCAT($this->users_table_flags SEPARATOR ',') user_flags FROM $this->users_table
+    WHERE $this->users_table_key IN (SELECT user_id FROM $this->conversation_users cu WHERE cu.conversation_id = cnvs.id)) user_flags
 FROM $this->conversations cnvs
 WHERE EXISTS (SELECT * FROM $this->conversation_users cu WHERE cu.conversation_id = cnvs.id AND cu.user_id = $user_id)
 UNION ALL
-SELECT msg.conversation_id, cnvs.title as conversation_title, cnvs.user_ids conversation_user_ids, msg.created_at, msg.updated_at, msg.id id, msg.content, mst.status, mst.self, msg.sender_id, us.$this->users_table_display sender, null conversation_participants
+SELECT msg.conversation_id, cnvs.title as conversation_title, cnvs.user_ids conversation_user_ids, msg.created_at, msg.updated_at, msg.id id, msg.content, mst.status, mst.self, msg.sender_id, us.$this->users_table_display sender, null conversation_participants, null user_flags
 FROM $this->messages msg
     INNER JOIN $this->conversations cnvs ON msg.conversation_id = cnvs.id
     INNER JOIN $this->messages_status mst ON msg.id = mst.message_id

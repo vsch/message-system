@@ -55,7 +55,7 @@ class MessageSystem
     }
 
     public
-    function getUserConversations($user_id)
+    function getUserConversations($user_id, \Closure $userFilter = null)
     {
         $messages = $this->repository->getConversations($user_id);
         $conversations = [];
@@ -66,8 +66,33 @@ class MessageSystem
                 $conv = new \stdClass();
                 $conv->id = $message->conversation_id;
                 $conv->title = $message->conversation_title;
-                $conv->user_ids = $message->conversation_user_ids;
-                $conv->participants = $message->conversation_participants;
+
+                $user_ids = explode(',', $message->conversation_user_ids);
+                $user_names = explode('|', $message->conversation_participants);
+
+                // filter user list if closure available
+                if ($userFilter)
+                {
+                    $user_flags = explode(',', $message->user_flags);
+
+                    $iMax = count($user_ids);
+                    for ($i = 0; $i < $iMax; $i++)
+                    {
+                        if (!$userFilter($user_ids[$i], $user_flags[$i], $user_names[$i]))
+                        {
+                            // remove this one
+                            unset($user_ids[$i]);
+                            unset($user_flags[$i]);
+                            unset($user_names[$i]);
+                        }
+                    }
+                }
+
+                $conv->participants = array_combine($user_ids, $user_names);
+
+                // remove self from list of participants, it is assumed
+                unset($conv->participants[$user_id]);
+
                 $conv->unread = 0;
                 $conv->self = 0;
                 $conv->messages = [];
@@ -106,7 +131,8 @@ class MessageSystem
     /**
      * @param mixed $user_ids array or comma separated list of ids of users
      *
-     * @return array | null               array of conversation rows or null if none where the listed users are the exact participants
+     * @return array | null               array of conversation rows or null if none where the listed users are the
+     *               exact participants
      */
     public
     function getConversationsBetweenUsers($user_ids)
